@@ -17,7 +17,7 @@ class OptiTrackNavigation(ScriptedLoadableModule):
     self.parent.title = "OptiTrackNavigation" # TODO make this more human readable by adding spaces
     self.parent.categories = ["Examples"]
     self.parent.dependencies = []
-    self.parent.contributors = ["John Doe (AnyWare Corp.)"] # replace with "Firstname Lastname (Organization)"
+    self.parent.contributors = ["David García (Laboratorio de Imagen Medica (LIM))"] # replace with "Firstname Lastname (Organization)"
     self.parent.helpText = """
     This is an example of scripted loadable module bundled in an extension.
     """
@@ -38,6 +38,23 @@ class OptiTrackNavigationWidget(ScriptedLoadableModuleWidget):
   def setup(self):
     ScriptedLoadableModuleWidget.setup(self)
     # Instantiate and connect widgets ...
+
+    # 
+    # Loading models Area
+    #
+    modelsCollapsibleButton = ctk.ctkCollapsibleButton()
+    modelsCollapsibleButton.text = "Models"
+    self.layout.addWidget(modelsCollapsibleButton)
+
+    # Layout within the dummy collapsible button
+    parametersFormLayout = qt.QFormLayout(modelsCollapsibleButton)
+
+    #
+    # Create First Model Button
+    #
+    self.createFirstModelButton = qt.QPushButton("Apply")
+    self.createFirstModelButton.enabled = False
+    parametersFormLayout.addRow(self.createFirstModelButton)
 
     #
     # Parameters Area
@@ -107,6 +124,9 @@ class OptiTrackNavigationWidget(ScriptedLoadableModuleWidget):
     self.applyButton.toolTip = "Run the algorithm."
     self.applyButton.enabled = False
     parametersFormLayout.addRow(self.applyButton)
+
+
+
 
     # connections
     self.applyButton.connect('clicked(bool)', self.onApplyButton)
