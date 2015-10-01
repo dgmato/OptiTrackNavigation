@@ -17,7 +17,7 @@ class OptiTrackNavigation(ScriptedLoadableModule):
     self.parent.title = "OptiTrackNavigation" # TODO make this more human readable by adding spaces
     self.parent.categories = ["Examples"]
     self.parent.dependencies = []
-    self.parent.contributors = ["David García (Laboratorio de Imagen Medica (LIM))"] # replace with "Firstname Lastname (Organization)"
+    self.parent.contributors = ["David Garcia (Laboratorio de Imagen Medica (LIM))"] # replace with "Firstname Lastname (Organization)"
     self.parent.helpText = """
     This is an example of scripted loadable module bundled in an extension.
     """
@@ -52,19 +52,85 @@ class OptiTrackNavigationWidget(ScriptedLoadableModuleWidget):
     #
     # Create First Model Button
     #
-    self.createFirstModelButton = qt.QPushButton("Apply")
-    self.createFirstModelButton.enabled = False
+    self.createFirstModelButton = qt.QPushButton("Create Skull Model")
+    self.createFirstModelButton.enabled = True
     parametersFormLayout.addRow(self.createFirstModelButton)
 
     #
-    # Parameters Area
+    # Create Second Model Button
     #
-    parametersCollapsibleButton = ctk.ctkCollapsibleButton()
-    parametersCollapsibleButton.text = "Parameters"
-    self.layout.addWidget(parametersCollapsibleButton)
+    self.createSecondModelButton = qt.QPushButton("Create Pointer Model")
+    self.createSecondModelButton.enabled = True
+    parametersFormLayout.addRow(self.createSecondModelButton)
+
+    #
+    # Transform Definition Area
+    #
+    transformsCollapsibleButton = ctk.ctkCollapsibleButton()
+    transformsCollapsibleButton.text = "Fiducial Registration"
+    self.layout.addWidget(transformsCollapsibleButton)
 
     # Layout within the dummy collapsible button
-    parametersFormLayout = qt.QFormLayout(parametersCollapsibleButton)
+    parametersFormLayout = qt.QFormLayout(transformsCollapsibleButton)
+
+    #
+    # PointerToTracker transform selector
+    #
+    self.inputSelector = slicer.qMRMLNodeComboBox()
+    self.inputSelector.nodeTypes = ( ("vtkMRMLScalarVolumeNode"), "" )
+    self.inputSelector.addAttribute( "vtkMRMLScalarVolumeNode", "LabelMap", 0 )
+    self.inputSelector.selectNodeUponCreation = True
+    self.inputSelector.addEnabled = False
+    self.inputSelector.removeEnabled = False
+    self.inputSelector.noneEnabled = False
+    self.inputSelector.showHidden = False
+    self.inputSelector.showChildNodeTypes = False
+    self.inputSelector.setMRMLScene( slicer.mrmlScene )
+    self.inputSelector.setToolTip( "Pick the PointerToTracker transform." )
+    parametersFormLayout.addRow("PointerToTracker transform: ", self.inputSelector)
+
+    #
+    # RigidBodyToTracker transform selector
+    #
+    self.inputSelector = slicer.qMRMLNodeComboBox()
+    self.inputSelector.nodeTypes = ( ("vtkMRMLScalarVolumeNode"), "" )
+    self.inputSelector.addAttribute( "vtkMRMLScalarVolumeNode", "LabelMap", 0 )
+    self.inputSelector.selectNodeUponCreation = True
+    self.inputSelector.addEnabled = False
+    self.inputSelector.removeEnabled = False
+    self.inputSelector.noneEnabled = False
+    self.inputSelector.showHidden = False
+    self.inputSelector.showChildNodeTypes = False
+    self.inputSelector.setMRMLScene( slicer.mrmlScene )
+    self.inputSelector.setToolTip( "Pick the RigidBodyToTracker transform." )
+    parametersFormLayout.addRow("RigidBodyToTracker transform: ", self.inputSelector)
+
+    #
+    # TrackerToRigidBody transform selector
+    #
+    self.inputSelector = slicer.qMRMLNodeComboBox()
+    self.inputSelector.nodeTypes = ( ("vtkMRMLScalarVolumeNode"), "" )
+    self.inputSelector.addAttribute( "vtkMRMLScalarVolumeNode", "LabelMap", 0 )
+    self.inputSelector.selectNodeUponCreation = True
+    self.inputSelector.addEnabled = False
+    self.inputSelector.removeEnabled = False
+    self.inputSelector.noneEnabled = False
+    self.inputSelector.showHidden = False
+    self.inputSelector.showChildNodeTypes = False
+    self.inputSelector.setMRMLScene( slicer.mrmlScene )
+    self.inputSelector.setToolTip( "Pick the TrackerToRigidBody transform." )
+    parametersFormLayout.addRow("TrackerToRigidBody transform: ", self.inputSelector)
+
+
+    #
+    # Fiducial Registration Area
+    #
+    registrationCollapsibleButton = ctk.ctkCollapsibleButton()
+    registrationCollapsibleButton.text = "Fiducial Registration"
+    self.layout.addWidget(registrationCollapsibleButton)
+
+    # Layout within the dummy collapsible button
+    parametersFormLayout = qt.QFormLayout(registrationCollapsibleButton)
 
     #
     # input volume selector
