@@ -50,24 +50,62 @@ class OptiTrackNavigationWidget(ScriptedLoadableModuleWidget):
     parametersFormLayout = qt.QFormLayout(modelsCollapsibleButton)
 
     #
-    # Create First Model Button
+    # Skull model selector
     #
-    self.createFirstModelButton = qt.QPushButton("Create Skull Model")
-    self.createFirstModelButton.enabled = True
-    parametersFormLayout.addRow(self.createFirstModelButton)
+    self.skullModelSelector = slicer.qMRMLNodeComboBox()
+    self.skullModelSelector.nodeTypes = ( ("vtkMRMLModelNode"), "" )
+    self.skullModelSelector.selectNodeUponCreation = True
+    self.skullModelSelector.addEnabled = False
+    self.skullModelSelector.removeEnabled = False
+    self.skullModelSelector.noneEnabled = False
+    self.skullModelSelector.showHidden = False
+    self.skullModelSelector.showChildNodeTypes = False
+    self.skullModelSelector.setMRMLScene( slicer.mrmlScene )
+    self.skullModelSelector.setToolTip( "Pick the skull model." )
+    parametersFormLayout.addRow("Skull model: ", self.skullModelSelector)
+      
+    #
+    # Skull Markers model selector
+    #
+    self.skullMarkersModelSelector = slicer.qMRMLNodeComboBox()
+    self.skullMarkersModelSelector.nodeTypes = ( ("vtkMRMLModelNode"), "" )
+    self.skullMarkersModelSelector.selectNodeUponCreation = True
+    self.skullMarkersModelSelector.addEnabled = False
+    self.skullMarkersModelSelector.removeEnabled = False
+    self.skullMarkersModelSelector.noneEnabled = False
+    self.skullMarkersModelSelector.showHidden = False
+    self.skullMarkersModelSelector.showChildNodeTypes = False
+    self.skullMarkersModelSelector.setMRMLScene( slicer.mrmlScene )
+    self.skullMarkersModelSelector.setToolTip( "Pick skull markers model." )
+    parametersFormLayout.addRow("Skull Markers model: ", self.skullMarkersModelSelector)
 
     #
-    # Create Second Model Button
+    # Pointer model selector
     #
-    self.createSecondModelButton = qt.QPushButton("Create Pointer Model")
-    self.createSecondModelButton.enabled = True
-    parametersFormLayout.addRow(self.createSecondModelButton)
-
+    self.pointerModelSelector = slicer.qMRMLNodeComboBox()
+    self.pointerModelSelector.nodeTypes = ( ("vtkMRMLModelNode"), "" )
+    self.pointerModelSelector.selectNodeUponCreation = True
+    self.pointerModelSelector.addEnabled = False
+    self.pointerModelSelector.removeEnabled = False
+    self.pointerModelSelector.noneEnabled = False
+    self.pointerModelSelector.showHidden = False
+    self.pointerModelSelector.showChildNodeTypes = False
+    self.pointerModelSelector.setMRMLScene( slicer.mrmlScene )
+    self.pointerModelSelector.setToolTip( "Pick the pointer model." )
+    parametersFormLayout.addRow("Pointer model: ", self.pointerModelSelector)
+   
+    #
+    # Load Models Button
+    #
+    self.loadModelsButton = qt.QPushButton("Load Models")
+    self.loadModelsButton.toolTip = "Load selected models."
+    self.loadModelsButton.enabled = False
+    parametersFormLayout.addRow(self.loadModelsButton)
     #
     # Transform Definition Area
     #
     transformsCollapsibleButton = ctk.ctkCollapsibleButton()
-    transformsCollapsibleButton.text = "Fiducial Registration"
+    transformsCollapsibleButton.text = "Transforms"
     self.layout.addWidget(transformsCollapsibleButton)
 
     # Layout within the dummy collapsible button
@@ -76,51 +114,58 @@ class OptiTrackNavigationWidget(ScriptedLoadableModuleWidget):
     #
     # PointerToTracker transform selector
     #
-    self.inputSelector = slicer.qMRMLNodeComboBox()
-    self.inputSelector.nodeTypes = ( ("vtkMRMLScalarVolumeNode"), "" )
-    self.inputSelector.addAttribute( "vtkMRMLScalarVolumeNode", "LabelMap", 0 )
-    self.inputSelector.selectNodeUponCreation = True
-    self.inputSelector.addEnabled = False
-    self.inputSelector.removeEnabled = False
-    self.inputSelector.noneEnabled = False
-    self.inputSelector.showHidden = False
-    self.inputSelector.showChildNodeTypes = False
-    self.inputSelector.setMRMLScene( slicer.mrmlScene )
-    self.inputSelector.setToolTip( "Pick the PointerToTracker transform." )
-    parametersFormLayout.addRow("PointerToTracker transform: ", self.inputSelector)
+    self.pointerToTrackerSelector = slicer.qMRMLNodeComboBox()
+    self.pointerToTrackerSelector.nodeTypes = ( ("vtkMRMLLinearTransformNode"), "" )
+    self.pointerToTrackerSelector.addAttribute( "vtkMRMLLinearTransformNode", "LabelMap", 0 )
+    self.pointerToTrackerSelector.selectNodeUponCreation = True
+    self.pointerToTrackerSelector.addEnabled = False
+    self.pointerToTrackerSelector.removeEnabled = False
+    self.pointerToTrackerSelector.noneEnabled = False
+    self.pointerToTrackerSelector.showHidden = False
+    self.pointerToTrackerSelector.showChildNodeTypes = False
+    self.pointerToTrackerSelector.setMRMLScene( slicer.mrmlScene )
+    self.pointerToTrackerSelector.setToolTip( "Pick the PointerToTracker transform." )
+    parametersFormLayout.addRow("PointerToTracker transform: ", self.pointerToTrackerSelector)
 
     #
     # RigidBodyToTracker transform selector
     #
-    self.inputSelector = slicer.qMRMLNodeComboBox()
-    self.inputSelector.nodeTypes = ( ("vtkMRMLScalarVolumeNode"), "" )
-    self.inputSelector.addAttribute( "vtkMRMLScalarVolumeNode", "LabelMap", 0 )
-    self.inputSelector.selectNodeUponCreation = True
-    self.inputSelector.addEnabled = False
-    self.inputSelector.removeEnabled = False
-    self.inputSelector.noneEnabled = False
-    self.inputSelector.showHidden = False
-    self.inputSelector.showChildNodeTypes = False
-    self.inputSelector.setMRMLScene( slicer.mrmlScene )
-    self.inputSelector.setToolTip( "Pick the RigidBodyToTracker transform." )
-    parametersFormLayout.addRow("RigidBodyToTracker transform: ", self.inputSelector)
+    self.rigidBodyToTrackerSelector = slicer.qMRMLNodeComboBox()
+    self.rigidBodyToTrackerSelector.nodeTypes = ( ("vtkMRMLLinearTransformNode"), "" )
+    self.rigidBodyToTrackerSelector.addAttribute( "vtkMRMLLinearTransformNode", "LabelMap", 0 )
+    self.rigidBodyToTrackerSelector.selectNodeUponCreation = True
+    self.rigidBodyToTrackerSelector.addEnabled = False
+    self.rigidBodyToTrackerSelector.removeEnabled = False
+    self.rigidBodyToTrackerSelector.noneEnabled = False
+    self.rigidBodyToTrackerSelector.showHidden = False
+    self.rigidBodyToTrackerSelector.showChildNodeTypes = False
+    self.rigidBodyToTrackerSelector.setMRMLScene( slicer.mrmlScene )
+    self.rigidBodyToTrackerSelector.setToolTip( "Pick the RigidBodyToTracker transform." )
+    parametersFormLayout.addRow("RigidBodyToTracker transform: ", self.rigidBodyToTrackerSelector)
 
     #
     # TrackerToRigidBody transform selector
     #
-    self.inputSelector = slicer.qMRMLNodeComboBox()
-    self.inputSelector.nodeTypes = ( ("vtkMRMLScalarVolumeNode"), "" )
-    self.inputSelector.addAttribute( "vtkMRMLScalarVolumeNode", "LabelMap", 0 )
-    self.inputSelector.selectNodeUponCreation = True
-    self.inputSelector.addEnabled = False
-    self.inputSelector.removeEnabled = False
-    self.inputSelector.noneEnabled = False
-    self.inputSelector.showHidden = False
-    self.inputSelector.showChildNodeTypes = False
-    self.inputSelector.setMRMLScene( slicer.mrmlScene )
-    self.inputSelector.setToolTip( "Pick the TrackerToRigidBody transform." )
-    parametersFormLayout.addRow("TrackerToRigidBody transform: ", self.inputSelector)
+    self.trackerToRigidBodySelector = slicer.qMRMLNodeComboBox()
+    self.trackerToRigidBodySelector.nodeTypes = ( ("vtkMRMLLinearTransformNode"), "" )
+    self.trackerToRigidBodySelector.addAttribute( "vtkMRMLLinearTransformNode", "LabelMap", 0 )
+    self.trackerToRigidBodySelector.selectNodeUponCreation = True
+    self.trackerToRigidBodySelector.addEnabled = False
+    self.trackerToRigidBodySelector.removeEnabled = False
+    self.trackerToRigidBodySelector.noneEnabled = False
+    self.trackerToRigidBodySelector.showHidden = False
+    self.trackerToRigidBodySelector.showChildNodeTypes = False
+    self.trackerToRigidBodySelector.setMRMLScene( slicer.mrmlScene )
+    self.trackerToRigidBodySelector.setToolTip( "Pick the TrackerToRigidBody transform." )
+    parametersFormLayout.addRow("TrackerToRigidBody transform: ", self.trackerToRigidBodySelector)
 
+    #
+    # Apply Button
+    #
+    self.applyButton = qt.QPushButton("Apply Transforms")
+    self.applyButton.toolTip = "Apply selected transforms."
+    self.applyButton.enabled = False
+    parametersFormLayout.addRow(self.applyButton)
 
     #
     # Fiducial Registration Area
@@ -195,6 +240,10 @@ class OptiTrackNavigationWidget(ScriptedLoadableModuleWidget):
 
 
     # connections
+    self.skullModelSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onModelSelect)
+    self.skullMarkersModelSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onModelSelect)
+    self.pointerModelSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onModelSelect)
+    self.loadModelsButton.connect('clicked(bool)', self.onLoadModelsButton)
     self.applyButton.connect('clicked(bool)', self.onApplyButton)
     self.inputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
     self.outputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
@@ -204,6 +253,15 @@ class OptiTrackNavigationWidget(ScriptedLoadableModuleWidget):
 
   def cleanup(self):
     pass
+
+  def onModelSelect(self):
+    # Enables load models button when model have been selected
+    self.loadModelsButton.enabled = self.skullModelSelector.currentNode() and self.skullMarkersModelSelector.currentNode() and self.pointerModelSelector.currentNode()
+
+  def onLoadModelsButton(self):
+    self.loadModelsButton.enabled = False
+    logic = OptiTrackNavigationLogic()
+    logic.loadModels(self.skullModelSelector.currentNode(), self.skullMarkersModelSelector.currentNode(), self.pointerModelSelector.currentNode())
 
   def onSelect(self):
     self.applyButton.enabled = self.inputSelector.currentNode() and self.outputSelector.currentNode()
@@ -229,6 +287,51 @@ class OptiTrackNavigationLogic(ScriptedLoadableModuleLogic):
   Uses ScriptedLoadableModuleLogic base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
+  def __init__(self):
+    self.skullModel=None
+    self.skullMarkersModel=None
+    self.pointerModel=None
+    self.pointerToTrackerTransform=None
+    self.rigidBodyToTrackerTransform=None
+    self.trackerToRigidBodyTransform=None
+
+  def loadModels(self, skullModel, skullMarkersModel, pointerModel):
+    self.skullModel=skullModel
+    self.skullMarkersModel=skullMarkersModel
+    self.pointerModel=pointerModel
+
+    self.skull = slicer.vtkMRMLModelNode()
+    self.skull.SetName('SkullModel')
+    self.skull.SetAndObservePolyData(self.skullModel.GetPolyData())     
+    modelDisplay = slicer.vtkMRMLModelDisplayNode()
+    modelDisplay.SetSliceIntersectionVisibility(True)
+    modelDisplay.SetColor(1,1,1)
+    slicer.mrmlScene.AddNode(modelDisplay)      
+    self.skull.SetAndObserveDisplayNodeID(modelDisplay.GetID())      
+    slicer.mrmlScene.AddNode(self.skull)
+    self.skull.SetDisplayVisibility(True)     
+    
+    self.skullMarkers = slicer.vtkMRMLModelNode()
+    self.skullMarkers.SetName('SkullMarkersModel')
+    self.skullMarkers.SetAndObservePolyData(self.skullMarkersModel.GetPolyData())     
+    modelDisplay = slicer.vtkMRMLModelDisplayNode()
+    modelDisplay.SetSliceIntersectionVisibility(True)
+    modelDisplay.SetColor(1,0,0)
+    slicer.mrmlScene.AddNode(modelDisplay)      
+    self.skullMarkers.SetAndObserveDisplayNodeID(modelDisplay.GetID())      
+    slicer.mrmlScene.AddNode(self.skullMarkers)
+    self.skullMarkers.SetDisplayVisibility(True)    
+
+    self.pointer = slicer.vtkMRMLModelNode()
+    self.pointer.SetName('PointerModel')
+    self.pointer.SetAndObservePolyData(self.pointerModel.GetPolyData())     
+    modelDisplay = slicer.vtkMRMLModelDisplayNode()
+    modelDisplay.SetSliceIntersectionVisibility(True)
+    modelDisplay.SetColor(0,0,0)
+    slicer.mrmlScene.AddNode(modelDisplay)      
+    self.pointer.SetAndObserveDisplayNodeID(modelDisplay.GetID())      
+    slicer.mrmlScene.AddNode(self.pointer)
+    self.pointer.SetDisplayVisibility(True)    
 
   def hasImageData(self,volumeNode):
     """This is a dummy logic method that
