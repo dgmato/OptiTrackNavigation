@@ -116,7 +116,6 @@ class OptiTrackNavigationWidget(ScriptedLoadableModuleWidget):
     #
     self.pointerToTrackerSelector = slicer.qMRMLNodeComboBox()
     self.pointerToTrackerSelector.nodeTypes = ( ("vtkMRMLLinearTransformNode"), "" )
-    self.pointerToTrackerSelector.addAttribute( "vtkMRMLLinearTransformNode", "LabelMap", 0 )
     self.pointerToTrackerSelector.selectNodeUponCreation = True
     self.pointerToTrackerSelector.addEnabled = False
     self.pointerToTrackerSelector.removeEnabled = False
@@ -132,7 +131,6 @@ class OptiTrackNavigationWidget(ScriptedLoadableModuleWidget):
     #
     self.rigidBodyToTrackerSelector = slicer.qMRMLNodeComboBox()
     self.rigidBodyToTrackerSelector.nodeTypes = ( ("vtkMRMLLinearTransformNode"), "" )
-    self.rigidBodyToTrackerSelector.addAttribute( "vtkMRMLLinearTransformNode", "LabelMap", 0 )
     self.rigidBodyToTrackerSelector.selectNodeUponCreation = True
     self.rigidBodyToTrackerSelector.addEnabled = False
     self.rigidBodyToTrackerSelector.removeEnabled = False
@@ -148,7 +146,6 @@ class OptiTrackNavigationWidget(ScriptedLoadableModuleWidget):
     #
     self.trackerToRigidBodySelector = slicer.qMRMLNodeComboBox()
     self.trackerToRigidBodySelector.nodeTypes = ( ("vtkMRMLLinearTransformNode"), "" )
-    self.trackerToRigidBodySelector.addAttribute( "vtkMRMLLinearTransformNode", "LabelMap", 0 )
     self.trackerToRigidBodySelector.selectNodeUponCreation = True
     self.trackerToRigidBodySelector.addEnabled = False
     self.trackerToRigidBodySelector.removeEnabled = False
@@ -160,12 +157,12 @@ class OptiTrackNavigationWidget(ScriptedLoadableModuleWidget):
     parametersFormLayout.addRow("TrackerToRigidBody transform: ", self.trackerToRigidBodySelector)
 
     #
-    # Apply Button
+    # Apply Transforms Button
     #
-    self.applyButton = qt.QPushButton("Apply Transforms")
-    self.applyButton.toolTip = "Apply selected transforms."
-    self.applyButton.enabled = False
-    parametersFormLayout.addRow(self.applyButton)
+    self.applyTransformsButton = qt.QPushButton("Apply Transforms")
+    self.applyTransformsButton.toolTip = "Apply selected transforms."
+    self.applyTransformsButton.enabled = False
+    parametersFormLayout.addRow(self.applyTransformsButton)
 
     #
     # Fiducial Registration Area
@@ -244,7 +241,10 @@ class OptiTrackNavigationWidget(ScriptedLoadableModuleWidget):
     self.skullMarkersModelSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onModelSelect)
     self.pointerModelSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onModelSelect)
     self.loadModelsButton.connect('clicked(bool)', self.onLoadModelsButton)
-    self.applyButton.connect('clicked(bool)', self.onApplyButton)
+    self.pointerToTrackerSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onTransformSelect)
+    self.rigidBodyToTrackerSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onTransformSelect)
+    self.trackerToRigidBodySelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onTransformSelect)
+    self.applyTransformsButton.connect('clicked(bool)', self.onApplyTransformButton)
     self.inputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
     self.outputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
 
@@ -260,8 +260,23 @@ class OptiTrackNavigationWidget(ScriptedLoadableModuleWidget):
 
   def onLoadModelsButton(self):
     self.loadModelsButton.enabled = False
+    self.skullModelSelector.enabled = False
+    self.skullMarkersModelSelector.enabled = False
+    self.pointerModelSelector.enabled = False
     logic = OptiTrackNavigationLogic()
     logic.loadModels(self.skullModelSelector.currentNode(), self.skullMarkersModelSelector.currentNode(), self.pointerModelSelector.currentNode())
+
+  def onTransformSelect(self):
+    # Enables apply transforms button when model have been selected
+    self.applyTransformsButton.enabled = self.pointerToTrackerSelector.currentNode() and self.rigidBodyToTrackerSelector.currentNode() and self.trackerToRigidBodySelector.currentNode()
+
+  def onApplyTransformButton(self):
+    self.applyTransformsButton.enabled = False
+    self.pointerToTrackerSelector.enabled = False
+    self.rigidBodyToTrackerSelector.enabled = False
+    self.trackerToRigidBodySelector.enabled = False
+    logic = OptiTrackNavigationLogic()
+    logic.applyTransforms(self.pointerToTrackerSelector.currentNode(), self.rigidBodyToTrackerSelector.currentNode(), self.trackerToRigidBodySelector.currentNode())
 
   def onSelect(self):
     self.applyButton.enabled = self.inputSelector.currentNode() and self.outputSelector.currentNode()
@@ -291,6 +306,9 @@ class OptiTrackNavigationLogic(ScriptedLoadableModuleLogic):
     self.skullModel=None
     self.skullMarkersModel=None
     self.pointerModel=None
+    self.skull = slicer.vtkMRMLModelNode()
+    self.skullMarkers = slicer.vtkMRMLModelNode()
+    self.pointer = slicer.vtkMRMLModelNode()
     self.pointerToTrackerTransform=None
     self.rigidBodyToTrackerTransform=None
     self.trackerToRigidBodyTransform=None
@@ -300,7 +318,6 @@ class OptiTrackNavigationLogic(ScriptedLoadableModuleLogic):
     self.skullMarkersModel=skullMarkersModel
     self.pointerModel=pointerModel
 
-    self.skull = slicer.vtkMRMLModelNode()
     self.skull.SetName('SkullModel')
     self.skull.SetAndObservePolyData(self.skullModel.GetPolyData())     
     modelDisplay = slicer.vtkMRMLModelDisplayNode()
@@ -311,7 +328,6 @@ class OptiTrackNavigationLogic(ScriptedLoadableModuleLogic):
     slicer.mrmlScene.AddNode(self.skull)
     self.skull.SetDisplayVisibility(True)     
     
-    self.skullMarkers = slicer.vtkMRMLModelNode()
     self.skullMarkers.SetName('SkullMarkersModel')
     self.skullMarkers.SetAndObservePolyData(self.skullMarkersModel.GetPolyData())     
     modelDisplay = slicer.vtkMRMLModelDisplayNode()
@@ -322,7 +338,6 @@ class OptiTrackNavigationLogic(ScriptedLoadableModuleLogic):
     slicer.mrmlScene.AddNode(self.skullMarkers)
     self.skullMarkers.SetDisplayVisibility(True)    
 
-    self.pointer = slicer.vtkMRMLModelNode()
     self.pointer.SetName('PointerModel')
     self.pointer.SetAndObservePolyData(self.pointerModel.GetPolyData())     
     modelDisplay = slicer.vtkMRMLModelDisplayNode()
@@ -332,6 +347,10 @@ class OptiTrackNavigationLogic(ScriptedLoadableModuleLogic):
     self.pointer.SetAndObserveDisplayNodeID(modelDisplay.GetID())      
     slicer.mrmlScene.AddNode(self.pointer)
     self.pointer.SetDisplayVisibility(True)    
+
+
+  def applyTransforms(self, pointerToTrackerTransform, rigidBodyToTrackerTransform, trackerToRigidBodyTransform):
+    self.pointer.ApplyTransform(pointerToTrackerTransform).ApplyTransform(trackerToRigidBodyTransform)
 
   def hasImageData(self,volumeNode):
     """This is a dummy logic method that
