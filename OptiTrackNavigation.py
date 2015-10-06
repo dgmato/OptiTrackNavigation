@@ -309,49 +309,78 @@ class OptiTrackNavigationLogic(ScriptedLoadableModuleLogic):
     self.skull = slicer.vtkMRMLModelNode()
     self.skullMarkers = slicer.vtkMRMLModelNode()
     self.pointer = slicer.vtkMRMLModelNode()
-    self.pointerToTrackerTransform=None
-    self.rigidBodyToTrackerTransform=None
-    self.trackerToRigidBodyTransform=None
-
+    # self.pointerToTrackerTransform=None
+    # self.rigidBodyToTrackerTransform=None
+    # self.trackerToRigidBodyTransform=None
+    self.matrixPointerToTrackerTransform=vtk.vtkMatrix4x4()
+    self.matrixRigidBodyToTrackerTransform=vtk.vtkMatrix4x4()
+    self.matrixTrackerToRigidBodyTransform=vtk.vtkMatrix4x4()
+    
   def loadModels(self, skullModel, skullMarkersModel, pointerModel):
     self.skullModel=skullModel
     self.skullMarkersModel=skullMarkersModel
     self.pointerModel=pointerModel
 
-    self.skull.SetName('SkullModel')
+    self.skull.SetName("SkullModel")
     self.skull.SetAndObservePolyData(self.skullModel.GetPolyData())     
-    modelDisplay = slicer.vtkMRMLModelDisplayNode()
-    modelDisplay.SetSliceIntersectionVisibility(True)
-    modelDisplay.SetColor(1,1,1)
-    slicer.mrmlScene.AddNode(modelDisplay)      
-    self.skull.SetAndObserveDisplayNodeID(modelDisplay.GetID())      
     slicer.mrmlScene.AddNode(self.skull)
-    self.skull.SetDisplayVisibility(True)     
+    # Add display node
+    modelDisplayNode = slicer.vtkMRMLModelDisplayNode()
+    modelDisplayNode.SetColor(1,1,1) # White
+    modelDisplayNode.BackfaceCullingOff()
+    modelDisplayNode.SliceIntersectionVisibilityOn()
+    modelDisplayNode.SetSliceIntersectionThickness(4)
+    modelDisplayNode.SetOpacity(1) # Between 0-1, 1 being opaque
+    slicer.mrmlScene.AddNode(modelDisplayNode)
+    self.skull.SetAndObserveDisplayNodeID(modelDisplayNode.GetID())
     
-    self.skullMarkers.SetName('SkullMarkersModel')
+    self.skullMarkers.SetName("SkullMarkersModel")
     self.skullMarkers.SetAndObservePolyData(self.skullMarkersModel.GetPolyData())     
-    modelDisplay = slicer.vtkMRMLModelDisplayNode()
-    modelDisplay.SetSliceIntersectionVisibility(True)
-    modelDisplay.SetColor(1,0,0)
-    slicer.mrmlScene.AddNode(modelDisplay)      
-    self.skullMarkers.SetAndObserveDisplayNodeID(modelDisplay.GetID())      
     slicer.mrmlScene.AddNode(self.skullMarkers)
-    self.skullMarkers.SetDisplayVisibility(True)    
+    # Add display node
+    modelDisplayNode = slicer.vtkMRMLModelDisplayNode()
+    modelDisplayNode.SetColor(1,0,0) # White
+    modelDisplayNode.BackfaceCullingOff()
+    modelDisplayNode.SliceIntersectionVisibilityOn()
+    modelDisplayNode.SetSliceIntersectionThickness(4)
+    modelDisplayNode.SetOpacity(1) # Between 0-1, 1 being opaque
+    slicer.mrmlScene.AddNode(modelDisplayNode)
+    self.skullMarkers.SetAndObserveDisplayNodeID(modelDisplayNode.GetID())
 
-    self.pointer.SetName('PointerModel')
+    self.pointer.SetName("PointerModel")
     self.pointer.SetAndObservePolyData(self.pointerModel.GetPolyData())     
-    modelDisplay = slicer.vtkMRMLModelDisplayNode()
-    modelDisplay.SetSliceIntersectionVisibility(True)
-    modelDisplay.SetColor(0,0,0)
-    slicer.mrmlScene.AddNode(modelDisplay)      
-    self.pointer.SetAndObserveDisplayNodeID(modelDisplay.GetID())      
     slicer.mrmlScene.AddNode(self.pointer)
-    self.pointer.SetDisplayVisibility(True)    
-
+    # Add display node
+    modelDisplayNode = slicer.vtkMRMLModelDisplayNode()
+    modelDisplayNode.SetColor(0,0,0) # White
+    modelDisplayNode.BackfaceCullingOff()
+    modelDisplayNode.SliceIntersectionVisibilityOn()
+    modelDisplayNode.SetSliceIntersectionThickness(4)
+    modelDisplayNode.SetOpacity(1) # Between 0-1, 1 being opaque
+    slicer.mrmlScene.AddNode(modelDisplayNode)
+    self.pointer.SetAndObserveDisplayNodeID(modelDisplayNode.GetID())
 
   def applyTransforms(self, pointerToTrackerTransform, rigidBodyToTrackerTransform, trackerToRigidBodyTransform):
-    self.pointer.ApplyTransform(pointerToTrackerTransform).ApplyTransform(trackerToRigidBodyTransform)
+    slicer.mrmlScene.AddNode(pointerToTrackerTransform)
+    slicer.mrmlScene.AddNode(rigidBodyToTrackerTransform)
+    slicer.mrmlScene.AddNode(trackerToRigidBodyTransform)
 
+    # # Get vtk matrix from transform:
+    # pointerToTrackerTransform.GetMatrixTransformToParent(self.matrixPointerToTrackerTransform)
+    # rigidBodyToTrackerTransform.GetMatrixTransformToParent(self.matrixRigidBodyToTrackerTransform)
+    # trackerToRigidBodyTransform.GetMatrixTransformToParent(self.matrixTrackerToRigidBodyTransform)
+
+    # self.skull.ApplyTransformMatrix(self.matrixPointerToTrackerTransform)
+
+    # Build transform tree for fiducial registration
+    pointerToTrackerTransform.SetAndObserveTransformNodeID(trackerToRigidBodyTransform.GetID())
+    self.pointer.SetAndObserveTransformNodeID(pointerToTrackerTransform.GetID())
+    # # Build transform tree for navigation
+    # self.skullToRigidBodyTransform.SetAndObserveTransformNodeID(self.rigidBodyToTrackerTransform.GetID())
+    # self.skull.SetAndObserveTransformNodeID(self.skullToRigidBodyTransform.GetID())
+    # self.needleTipToNeedle.SetAndObserveTransformNodeID(self.needleToReference.GetID())
+    # self.pointer.SetAndObserveTransformNodeID(self.pointerToTrackerTransform.GetID())
+    
   def hasImageData(self,volumeNode):
     """This is a dummy logic method that
     returns true if the passed in volume
