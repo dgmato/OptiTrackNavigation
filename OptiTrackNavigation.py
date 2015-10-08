@@ -127,36 +127,29 @@ class OptiTrackNavigationWidget(ScriptedLoadableModuleWidget):
     registrationCollapsibleButton.text = "Fiducial Registration"
     self.layout.addWidget(registrationCollapsibleButton)   
     parametersFormLayout = qt.QFormLayout(registrationCollapsibleButton)
+
+    # Label registration 
+    registrationLabel = qt.QLabel( "Note: Use Fiducial Registration Wizard module to carry out the fiducial registration.\nParameters: \n"+
+                                   "    - From fiducials: SkullModelFiducials (placed directly over the skull model)\n    - To Fiducials: PointerTipFiducials"+
+                                   " (placed in the pointer tip when in contact with the markers)\n"+"    - Place fiducials -> Probe transform: PointerTipToTracker\n"+
+                                   "    - Registration result transform: SkullToRigidBody\n"+"    - Result transform type: Similarity\n")
+    registrationLabel.setWordWrap( True )
+    parametersFormLayout.addRow(registrationLabel)
     
-    # input volume selector    
-    self.registrationInputSelector = slicer.qMRMLNodeComboBox()
-    self.registrationInputSelector.nodeTypes = ( ("vtkMRMLScalarVolumeNode"), "" )
-    self.registrationInputSelector.addAttribute( "vtkMRMLScalarVolumeNode", "LabelMap", 0 )
-    self.registrationInputSelector.selectNodeUponCreation = True
-    self.registrationInputSelector.addEnabled = False
-    self.registrationInputSelector.removeEnabled = False
-    self.registrationInputSelector.noneEnabled = False
-    self.registrationInputSelector.showHidden = False
-    self.registrationInputSelector.showChildNodeTypes = False
-    self.registrationInputSelector.setMRMLScene( slicer.mrmlScene )
-    self.registrationInputSelector.setToolTip( "Pick the input to the algorithm." )
-    parametersFormLayout.addRow("Input Volume: ", self.registrationInputSelector)
-    
-    # output volume selector   
-    self.registrationOutputSelector = slicer.qMRMLNodeComboBox()
-    self.registrationOutputSelector.nodeTypes = ( ("vtkMRMLScalarVolumeNode"), "" )
-    self.registrationOutputSelector.addAttribute( "vtkMRMLScalarVolumeNode", "LabelMap", 0 )
-    self.registrationOutputSelector.selectNodeUponCreation = False
-    self.registrationOutputSelector.addEnabled = True
-    self.registrationOutputSelector.removeEnabled = True
-    self.registrationOutputSelector.noneEnabled = False
-    self.registrationOutputSelector.showHidden = False
-    self.registrationOutputSelector.showChildNodeTypes = False
-    self.registrationOutputSelector.setMRMLScene( slicer.mrmlScene )
-    self.registrationOutputSelector.setToolTip( "Pick the output to the algorithm." )
-    parametersFormLayout.addRow("Output Volume: ", self.registrationOutputSelector)
-   
-    # Apply Button    
+    # SkullToRigidBody transform selector    
+    self.skullToRigidBodySelector = slicer.qMRMLNodeComboBox()
+    self.skullToRigidBodySelector.nodeTypes = ( ("vtkMRMLLinearTransformNode"), "" )
+    self.skullToRigidBodySelector.selectNodeUponCreation = True
+    self.skullToRigidBodySelector.addEnabled = False
+    self.skullToRigidBodySelector.removeEnabled = False
+    self.skullToRigidBodySelector.noneEnabled = False
+    self.skullToRigidBodySelector.showHidden = False
+    self.skullToRigidBodySelector.showChildNodeTypes = False
+    self.skullToRigidBodySelector.setMRMLScene( slicer.mrmlScene )
+    self.skullToRigidBodySelector.setToolTip( "Pick the SkullToRigidBody transform (output of fiducial registration)." )
+    parametersFormLayout.addRow("SkullToRigidBody transform: ", self.skullToRigidBodySelector)
+          
+    # Apply Registration Result Button    
     self.applyRegistrationButton = qt.QPushButton("Apply")
     self.applyRegistrationButton.toolTip = "Run the algorithm."
     self.applyRegistrationButton.enabled = False
@@ -167,8 +160,7 @@ class OptiTrackNavigationWidget(ScriptedLoadableModuleWidget):
     self.rigidBodyToTrackerSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
     self.trackerToRigidBodySelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
     self.applyTransformsButton.connect('clicked(bool)', self.onApplyTransformsClicked)
-    self.registrationInputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
-    self.registrationOutputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
+    self.skullToRigidBodySelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
     self.applyRegistrationButton.connect('clicked(bool)', self.onApplyRegistrationClicked)
 
     # Add vertical spacer
@@ -182,7 +174,7 @@ class OptiTrackNavigationWidget(ScriptedLoadableModuleWidget):
 
   def onSelect(self):    
     self.applyTransformsButton.enabled = self.pointerToTrackerSelector.currentNode() and self.rigidBodyToTrackerSelector.currentNode() and self.trackerToRigidBodySelector.currentNode()
-    self.applyRegistrationButton.enabled = self.registrationInputSelector.currentNode() and self.registrationOutputSelector.currentNode()
+    self.applyRegistrationButton.enabled = self.skullToRigidBodySelector.currentNode()
   
   def onApplyTransformsClicked(self):
     self.applyTransformsButton.enabled = False
@@ -193,11 +185,23 @@ class OptiTrackNavigationWidget(ScriptedLoadableModuleWidget):
     logic.buildTransformTree(self.pointerModelSelector.currentNode(), self.pointerToTrackerSelector.currentNode(), self.rigidBodyToTrackerSelector.currentNode(), self.trackerToRigidBodySelector.currentNode())
 
   def onApplyRegistrationClicked(self):
+    self.skullToRigidBodySelector.enabled = False
     logic = OptiTrackNavigationLogic()
+    logic.startNavigation(self.pointerModelSelector.currentNode(), self.skullModelSelector.currentNode(), self.skullMarkersModelSelector.currentNode(), self.pointerToTrackerSelector.currentNode(), self.rigidBodyToTrackerSelector.currentNode(), self.trackerToRigidBodySelector.currentNode(), self.skullToRigidBodySelector.currentNode())
 
 ### OptiTrackNavigationLogic
 class OptiTrackNavigationLogic(ScriptedLoadableModuleLogic):
 
   def buildTransformTree(self, pointerModelNode, pointerToTrackerTransformNode, rigidBodyToTrackerTransformNode, trackerToRigidBodyTransformNode):
     pointerToTrackerTransformNode.SetAndObserveTransformNodeID(trackerToRigidBodyTransformNode.GetID())
+    pointerModelNode.SetAndObserveTransformNodeID(pointerToTrackerTransformNode.GetID())
+
+  def startNavigation(self, pointerModelNode, skullModelNode, skullMarkersModelNode, pointerToTrackerTransformNode, rigidBodyToTrackerTransformNode, trackerToRigidBodyTransformNode, skullToRigidBodyTransformNode):
+    # Reset tranform tree
+    pointerToTrackerTransformNode.SetAndObserveTransformNodeID(pointerModelNode.GetID())
+    
+    # Build final transform tree
+    skullToRigidBodyTransformNode.SetAndObserveTransformNodeID(rigidBodyToTrackerTransformNode.GetID())
+    skullModelNode.SetAndObserveTransformNodeID(skullToRigidBodyTransformNode.GetID())
+    skullMarkersModelNode.SetAndObserveTransformNodeID(skullToRigidBodyTransformNode.GetID())
     pointerModelNode.SetAndObserveTransformNodeID(pointerToTrackerTransformNode.GetID())
